@@ -4,9 +4,9 @@ using Microsoft.Extensions.Logging;
 
 namespace CleanArch.eShop.Application.ProductCategories.EventHandlers;
 
-public class ProductCategoryCreatedEventHandler(ILogger<ProductCategoryCreatedEventHandler> logger) : INotificationHandler<ProductCategoryCreatedEvent>
+public class ProductCategoryDeletedEventHandler(ILogger<ProductCategoryDeletedEventHandler> logger) : INotificationHandler<ProductCategoryDeletedEvent>
 {
-    public Task Handle(ProductCategoryCreatedEvent notification, CancellationToken cancellationToken)
+    public Task Handle(ProductCategoryDeletedEvent notification, CancellationToken cancellationToken)
     {
         logger.LogInformation("CleanArchitecture Domain Event: {DomainEvent}", notification.GetType().Name);
 

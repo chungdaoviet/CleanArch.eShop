@@ -1,5 +1,6 @@
 using Ardalis.GuardClauses;
 using CleanArch.eShop.Application.Common.Interfaces;
+using CleanArch.eShop.Domain.Constants;
 using CleanArch.eShop.Infrastructure.Data;
 using CleanArch.eShop.Infrastructure.Data.Interceptors;
 using CleanArch.eShop.Infrastructure.Identity;
@@ -31,11 +32,11 @@ public static class DependencyInjection
             options.UseNpgsql(connectionString);
         });
         services.AddScoped<IApplicationDbContext>(provider => provider.GetRequiredService<ApplicationDbContext>());
-        // services.AddScoped<ApplicationDbContextInitialiser>();
+        services.AddScoped<ApplicationDbContextInitializer>();
 
         services.AddAuthentication()
             .AddBearerToken(IdentityConstants.BearerScheme);
-        services.AddAuthorization();
+        services.AddAuthorizationBuilder();
 
         services
             .AddIdentityCore<ApplicationUser>()
@@ -45,6 +46,9 @@ public static class DependencyInjection
         
         services.AddSingleton(TimeProvider.System);
         services.AddTransient<IIdentityService, IdentityService>();
+
+        services.AddAuthorizationBuilder()
+            .AddPolicy(Policies.CanPurge, policy => policy.RequireRole(Roles.Administrator));
         
         return services;
     }
