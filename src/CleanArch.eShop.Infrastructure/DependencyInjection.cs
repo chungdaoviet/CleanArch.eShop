@@ -11,6 +11,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Quartz;
 
 namespace CleanArch.eShop.Infrastructure;
 
@@ -63,6 +64,21 @@ public static class DependencyInjection
 
         services.AddAuthorizationBuilder()
             .AddPolicy(Policies.CanPurge, policy => policy.RequireRole(Roles.Administrator));
+
+        services.AddQuartz(q =>
+        {
+            q.UsePersistentStore(opt =>
+            {
+                opt.UsePostgres(connectionString);
+                opt.UseNewtonsoftJsonSerializer(cfg =>
+                {
+                });
+            });
+        });
+        services.AddQuartzHostedService(opt =>
+        {
+            opt.WaitForJobsToComplete = true;
+        });
         
         return services;
     }
@@ -74,8 +90,6 @@ public static class DependencyInjection
         {
             return services;
         }
-
-        Guard.Against.Null(mailSettingsSection.Value, message: $"{MailSettings.Section} section not found.");
 
         services.Configure<MailSettings>(mailSettingsSection);
         services.AddTransient<IMailService, MailService>();
