@@ -1,9 +1,11 @@
 using Ardalis.GuardClauses;
 using CleanArch.eShop.Application.Common.Interfaces;
 using CleanArch.eShop.Domain.Constants;
+using CleanArch.eShop.Infrastructure.Configurations;
 using CleanArch.eShop.Infrastructure.Data;
 using CleanArch.eShop.Infrastructure.Data.Interceptors;
 using CleanArch.eShop.Infrastructure.Identity;
+using CleanArch.eShop.Infrastructure.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -34,6 +36,18 @@ public static class DependencyInjection
         services.AddScoped<IApplicationDbContext>(provider => provider.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<ApplicationDbContextInitializer>();
 
+        var redisConnectionString = configuration.GetConnectionString("Redis");
+        Guard.Against.Null(redisConnectionString, message: "Connection string 'Redis' not found.");
+        services.AddStackExchangeRedisCache(options =>
+        {
+            options.Configuration = redisConnectionString;
+        });
+        services.AddTransient<IDistributedCacheService, RedisCacheService>();
+
+        services.AddTransient<IFileService, FileService>();
+
+        services.AddMailService(configuration);
+
         services.AddAuthentication()
             .AddBearerToken(IdentityConstants.BearerScheme);
         services.AddAuthorizationBuilder();
@@ -50,6 +64,22 @@ public static class DependencyInjection
         services.AddAuthorizationBuilder()
             .AddPolicy(Policies.CanPurge, policy => policy.RequireRole(Roles.Administrator));
         
+        return services;
+    }
+
+    private static IServiceCollection AddMailService(this IServiceCollection services, IConfiguration configuration)
+    {
+        var mailSettingsSection = configuration.GetSection(MailSettings.Section);
+        if (!mailSettingsSection.Exists())
+        {
+            return services;
+        }
+
+        Guard.Against.Null(mailSettingsSection.Value, message: $"{MailSettings.Section} section not found.");
+
+        services.Configure<MailSettings>(mailSettingsSection);
+        services.AddTransient<IMailService, MailService>();
+
         return services;
     }
 }
